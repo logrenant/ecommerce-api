@@ -13,6 +13,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	"github.com/rs/cors"
 )
 
 func main() {
@@ -45,6 +46,17 @@ func main() {
 	// Add middleware
 	r.Use(middleware.Logger)
 
+	// Configure CORS
+	corsHandler := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:5173"}, // Veya "*" tüm kökenlere izin verir
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
+		AllowedHeaders:   []string{"Content-Type"},
+		AllowCredentials: true,
+	})
+
+	// Apply CORS middleware
+	r.Use(corsHandler.Handler)
+
 	// Basic GET endpoint
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Welcome to the E-commerce API!"))
@@ -53,6 +65,7 @@ func main() {
 	// Routes for CRUD functions
 	r.Post("/products", productHandler.CreateProduct)
 	r.Get("/products/{id}", productHandler.GetProductByID)
+	r.Get("/products", productHandler.GetAllProducts)
 	r.Put("/products/{id}", productHandler.UpdateProduct)
 	r.Delete("/products/{id}", productHandler.DeleteProduct)
 

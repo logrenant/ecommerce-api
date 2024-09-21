@@ -3,5 +3,6 @@ CREATE TABLE products (
     name TEXT NOT NULL,
     description TEXT,
     price NUMERIC(10, 2) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT NOW()
 );
