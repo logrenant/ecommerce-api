@@ -16,6 +16,7 @@ type Product struct {
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
 	Price       float64   `json:"price"`
+	ImageURL    string    `json:"image_url"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
@@ -45,8 +46,8 @@ func (r *productRepository) CreateProduct(ctx context.Context, product Product) 
 	product.CreatedAt = time.Now()
 	product.UpdatedAt = time.Now()
 
-	query := `INSERT INTO products (id, name, description, price, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)`
-	_, err := r.db.ExecContext(ctx, query, product.ID, product.Name, product.Description, product.Price, product.CreatedAt, product.UpdatedAt)
+	query := `INSERT INTO products (id, name, description, price, image_url, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	_, err := r.db.ExecContext(ctx, query, product.ID, product.Name, product.Description, product.Price, product.ImageURL, product.CreatedAt, product.UpdatedAt)
 	if err != nil {
 		log.Println("Failed to insert product:", err)
 		return uuid.Nil, err
@@ -56,10 +57,10 @@ func (r *productRepository) CreateProduct(ctx context.Context, product Product) 
 
 // Bring Product by ID
 func (r *productRepository) GetProductByID(ctx context.Context, id uuid.UUID) (*Product, error) {
-	query := `SELECT id, name, description, price, created_at, updated_at FROM products WHERE id = $1`
+	query := `SELECT id, name, description, price, image_url, created_at, updated_at FROM products WHERE id = $1`
 
 	var product Product
-	err := r.db.QueryRowContext(ctx, query, id).Scan(&product.ID, &product.Name, &product.Description, &product.Price, &product.CreatedAt, &product.UpdatedAt)
+	err := r.db.QueryRowContext(ctx, query, id).Scan(&product.ID, &product.Name, &product.Description, &product.Price, &product.ImageURL, &product.CreatedAt, &product.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.New("product not found")
@@ -71,8 +72,8 @@ func (r *productRepository) GetProductByID(ctx context.Context, id uuid.UUID) (*
 
 // Update product
 func (r *productRepository) UpdateProduct(ctx context.Context, product Product) error {
-	query := `UPDATE products SET name = $1, description = $2, price = $3, updated_at = NOW() WHERE id = $4`
-	_, err := r.db.ExecContext(ctx, query, product.Name, product.Description, product.Price, product.ID)
+	query := `UPDATE products SET name = $1, description = $2, price = $3, image_url = $4, updated_at = NOW() WHERE id = $5`
+	_, err := r.db.ExecContext(ctx, query, product.Name, product.Description, product.Price, product.ImageURL, product.ID)
 	return err
 }
 
@@ -85,7 +86,7 @@ func (r *productRepository) DeleteProduct(ctx context.Context, id uuid.UUID) err
 
 // GET all products
 func (r *productRepository) GetAllProducts(ctx context.Context) ([]Product, error) {
-	query := `SELECT id, name, description, price, created_at, updated_at FROM products`
+	query := `SELECT id, name, description, price, image_url, created_at, updated_at FROM products`
 
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
@@ -96,7 +97,7 @@ func (r *productRepository) GetAllProducts(ctx context.Context) ([]Product, erro
 	var products []Product
 	for rows.Next() {
 		var product Product
-		if err := rows.Scan(&product.ID, &product.Name, &product.Description, &product.Price, &product.CreatedAt, &product.UpdatedAt); err != nil {
+		if err := rows.Scan(&product.ID, &product.Name, &product.Description, &product.Price, &product.ImageURL, &product.CreatedAt, &product.UpdatedAt); err != nil {
 			return nil, err
 		}
 		products = append(products, product)
