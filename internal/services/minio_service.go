@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -18,7 +19,7 @@ func NewMinIOService(endpoint, accessKey, secretKey, bucket string) (*MinIOServi
 
 	client, err := minio.New(endpoint, &minio.Options{
 		Creds:  creds,
-		Secure: false, // Eğer HTTPS kullanıyorsanız true yapın
+		Secure: false,
 	})
 	if err != nil {
 		return nil, err
@@ -29,7 +30,6 @@ func NewMinIOService(endpoint, accessKey, secretKey, bucket string) (*MinIOServi
 	if err != nil {
 		exists, errBucketExists := client.BucketExists(context.Background(), bucket)
 		if errBucketExists == nil && exists {
-			// Bucket zaten mevcut
 		} else {
 			return nil, err
 		}
@@ -42,11 +42,30 @@ func NewMinIOService(endpoint, accessKey, secretKey, bucket string) (*MinIOServi
 
 }
 
-// UploadFile dosyayı MinIO'ya yükler
-func (s *MinIOService) UploadFile(ctx context.Context, file io.Reader, fileName string) error {
-	// MinIO'ya dosyayı yükle
+func (s *MinIOService) UploadFile(ctx context.Context, file io.Reader, fileName string) (string, error) {
+	// Dosyayı yükle
 	_, err := s.client.PutObject(ctx, s.bucket, fileName, file, -1, minio.PutObjectOptions{})
-	return err
+	if err != nil {
+		return "", err
+	}
+
+	presignedURL, err := s.client.PresignedGetObject(ctx, s.bucket, fileName, 7*24*time.Hour, nil)
+	if err != nil {
+		return "", err
+	}
+
+	return presignedURL.String(), nil
+}
+
+// UpdateFile güncelleme işlemi için yeni bir fonksiyon ekliyoruz.
+func (s *MinIOService) UpdateFile(ctx context.Context, oldFileName string, newFile io.Reader, newFileName string) (string, error) {
+	// Eski dosyayı sil
+	if err := s.DeleteFile(ctx, oldFileName); err != nil {
+		return "", err
+	}
+
+	// Yeni dosyayı yükle
+	return s.UploadFile(ctx, newFile, newFileName)
 }
 
 func (s *MinIOService) DeleteFile(ctx context.Context, filename string) error {
